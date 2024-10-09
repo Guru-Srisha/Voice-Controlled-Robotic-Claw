@@ -1,62 +1,64 @@
-import serial.tools.list_ports
+import RPi.GPIO as GPIO
 import speech_recognition as sr
+import serial
+import time
 
-r = sr.Recognizer()
+BUTTON_PIN = 17 # Pin 11 for button
+LED_PIN = 27 # Pin 13 for LED
 
-ports = serial.tools.list_ports.comports()
-serialInst = serial.Serial()
-portlist = []
-for onePort in ports:
-    portlist.append(str(onePort))
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(LED_PIN, GPIO.OUT)
 
-# PUT YOUR COM PORT HERE
-val = 
-for x in range(0, len(portlist)):
-    if portlist[x].startswith("COM" + str(val)):
-        portvar = "COM" + str(val)
+ser = serial.Serial('/dev/ttyUSB0', 9600)
+time.sleep(2)
 
-serialInst.baudrate = 9600
-serialInst.port = portvar
-serialInst.open()
+recognizer = sr.Recognizer()
 
-def record_text():
-    while True:
+def listen_and_send_commands():
+    with sr.Microphone(device_index=<mic_index>) as source: # Change your mic index here
+        GPIO.output(LED_PIN, GPIO.HIGH)
+
         try:
-            with sr.Microphone() as Source2:
-                r.adjust_for_ambient_noise(Source2, duration=0.02)
-                audio2 = r.listen(Source2)
-                myText = r.recognize_google(audio2)
-                return myText.lower()
-        except sr.RequestError as e:
-            print("Could not request results: {0}".format(e))
-        except sr.UnknownValueError:
-            print("Didn't get you.")
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            audio = recognizer.listen(source, timeout=1, phrase_time_limit=1.5)
+            command = recognizer.recognize_google(audio).lower()
 
-while True:
-    print("Tell me your command.")
-    command = record_text()
-    
-    if "forward" in command:
-        print("Moving forward")
-        dir = 'F'
-        serialInst.write(dir.encode('utf-8'))
-    elif "backward" in command:
-        print("Moving backward")
-        dir = 'B'
-        serialInst.write(dir.encode('utf-8'))
-    elif "up" in command:
-        print("Moving up")
-        dir = 'U'
-        serialInst.write(dir.encode('utf-8'))
-    elif "down" in command:
-        print("Moving down")
-        dir = 'D'
-        serialInst.write(dir.encode('utf-8'))
-    elif "left" in command:
-        print("Moving left")
-        dir = 'L'
-        serialInst.write(dir.encode('utf-8'))
-    elif "right" in command:
-        print("Moving right")
-        dir = 'R'
-        serialInst.write(dir.encode('utf-8'))
+            if "left" in command:
+                ser.write('L'.encode('utf-8'))
+            elif "right" in command:
+                ser.write('R'.encode('utf-8'))
+            elif "up" in command:
+                ser.write('U'.encode('utf-8'))
+            elif "down" in command:
+                ser.write('D'.encode('utf-8'))
+            elif "front" in command:
+                ser.write('F'.encode('utf-8'))
+            elif "back" in command:
+                ser.write('B'.encode('utf-8'))
+            elif "pick" in command or "grab" in command or "close" in command:
+                ser.write('C'.encode('utf-8'))
+            elif "open" in command or "drop" in command:
+                ser.write('O'.encode('utf-8'))
+
+        except sr.UnknownValueError:
+            pass
+        except sr.RequestError as e:
+            pass
+        except sr.WaitTimeoutError:
+            pass
+        finally:
+            GPIO.output(LED_PIN, GPIO.LOW)
+
+try:
+    while True:
+        button_state = GPIO.input(BUTTON_PIN)
+        if button_state == GPIO.LOW:
+            listen_and_send_commands()
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    pass
+finally:
+    ser.close()
+    GPIO.cleanup()
