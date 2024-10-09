@@ -5,7 +5,7 @@ Servo servoY;
 Servo servoZ;
 Servo servoClamp;
 
-//Mid point values
+//Mid point values, change as needed
 int xDeg=85;
 int yDeg=45;
 int zDeg=70;
@@ -44,6 +44,7 @@ void loop()
 
   delay(5);
 
+  // Max and  Min values, change as needed
   if(leftJoyX<40) xDeg-=15;
   else if(leftJoyX<200) xDeg-=10;
   else if(leftJoyX>1004) xDeg+=15;
