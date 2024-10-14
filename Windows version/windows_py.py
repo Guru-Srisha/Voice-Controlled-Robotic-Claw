@@ -60,3 +60,11 @@ while True:
         print("Moving right")
         dir = 'R'
         serialInst.write(dir.encode('utf-8'))
+    elif "pick" in command or "grab" in command or "close" in command:
+        print("Closing the claw")
+        dir = 'C'
+        serialInst.write(dir.encode('utf-8'))
+    elif "open" in command or "drop" in command:
+        print("Opening the claw")
+        dir = 'O'
+        serialInst.write(dir.encode('utf-8'))
